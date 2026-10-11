@@ -123,7 +123,7 @@ def main():
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(content, encoding="utf-8")
     print(f"Created: {target}")
-    print(f"Repo: {repo['name']}  (not committed; use obsidian-sync to commit)")
+    print(f"Repo: {repo['name']}  (not committed; use git-repo-sync when you want to commit or sync)")
 
 
 if __name__ == "__main__":

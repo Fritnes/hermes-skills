@@ -11,7 +11,7 @@ Manage ordinary Git repositories independently of Obsidian. This skill does not 
 
 ## Repository registry
 
-Persist the list of repositories in `~/.hermes/git-repos.toml`, outside this skills repository. Do not store credentials or access tokens there; use the user's existing SSH agent, credential manager, or Git credential helper.
+Persist the list of repositories in `~/.hermes/git-repos.toml`, outside this skills repository. `HERMES_GIT_REPOS_FILE` can point all Git and Obsidian skills to another registry path. Do not store credentials or access tokens there; use the user's existing SSH agent, credential manager, or Git credential helper.
 
 Use one table per repository under `[repositories.<key>]`. The registry supports any number of repositories. Each entry has the required fields `name`, `description`, `remote`, and `local_path`; `branch` is optional.
 
@@ -32,9 +32,11 @@ local_path = "/home/user/.dotfiles"
 
 `name` is a short, unique identifier and should match the table key. `description` briefly explains what the repository is for. `remote` is the expected Git remote URL. `local_path` is the absolute path to the working copy. `branch` is optional; if omitted, use the repository's currently checked-out branch.
 
+An optional `obsidian = true` marks a repository for the Obsidian skills. They also recognize a local `.obsidian/` directory or `.vault.toml`; set the flag when the vault has neither marker.
+
 When registering a repository:
 
-1. Ask for the repo name, a brief description, its remote URL, and local path. Ask for the branch only if it cannot be determined or the user wants a particular branch.
+1. Ask for the repo name, a brief description, its remote URL, and local path. Ask for the branch only if it cannot be determined or the user wants a particular branch. If it is an Obsidian vault without a `.obsidian/` directory, add `obsidian = true` to its entry.
 2. If the repo is already local, verify it is a Git repository and inspect its remotes and current branch. If it is not local, ask whether to clone it and confirm the destination path before cloning.
 3. Show the proposed entry and get confirmation before writing it. Do not put credentials or tokens in the remote URL.
 4. Preserve other registry entries. Validate the TOML after editing, then report the saved name and values, omitting any sensitive data.
@@ -58,6 +60,7 @@ The checker reports whether a branch is up to date, behind the remote, ahead, or
 - For status requests, run `git -C <path> status --short --branch` and report the result. Use `git -C <path> fetch` when ahead/behind information is needed; fetch does not change the working tree.
 - Pull only when the working tree is clean. Show the target branch and remote first, then use `git -C <path> pull --ff-only` to avoid creating an unexpected merge commit. If it cannot fast-forward, stop and explain the situation; do not reset, rebase user changes, or resolve conflicts automatically.
 - Before committing, inspect `git diff` and `git status`, summarize the files and changes, and ask for approval and a commit message. Stage only the approved changes; do not blindly stage unrelated files.
+- For an Obsidian repo, if `<local_path>/.vault.toml` has `[sync].commit_prefix`, include that prefix in the proposed commit message. Still ask for approval before committing.
 - Push manually only when the user explicitly asks. State the repository and branch before pushing. Never force-push.
 - A request to "sync" authorizes the script's fast-forward pull or push of already-committed changes. Report conflicts and stop rather than guessing.
 - For bulk requests, show the repository list first. Sync only the requested repos, report each result, and never create commits as part of a bulk sync.

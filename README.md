@@ -10,11 +10,9 @@ skills/
 ├── text-summarizer/
 ├── skill-template/
 ├── git-repo-sync/
-├── obsidian-add-repo-config/
 ├── obsidian-templates/
 ├── obsidian-index/
 ├── obsidian-lint/
-├── obsidian-sync/
 ├── vikunja/
 └── ...
 ```
@@ -29,11 +27,9 @@ Each folder in `skills/` contains its own `SKILL.md` and any supporting scripts 
 | `text-summarizer` | Summarizes paste text into a short structured answer | "Summarize this article" |
 | `skill-template` | Starter template for creating a new skill | "Create a new skill" |
 | `git-repo-sync` | Register multiple repos and check whether local branches need updating | "Check my home-lab repo" |
-| `obsidian-add-repo-config` | Add, update, disable, and remove vault repo configuration | "Connect my vault repo" |
 | `obsidian-templates` | Create notes from templates into the right repo/folder | "Create a meeting note" |
 | `obsidian-index` | Build and query a searchable vault index | "Find notes about project alpha" |
 | `obsidian-lint` | Check for broken links, orphans, duplicates, and missing frontmatter | "Audit my vault" |
-| `obsidian-sync` | Safely check status, pull, commit, and push vault repos | "Sync my vault" |
 | `vikunja` | Manage tasks in a self-hosted Vikunja instance | "List my open tasks" |
 
 ## Install
@@ -52,20 +48,20 @@ If you want just a subset, replace the wildcard with specific folders.
 
 ## Obsidian vault skills
 
-The Obsidian-related skills are intentionally named with the `obsidian-*` prefix so they stay consistent with the repo convention.
+The Obsidian-related skills are intentionally named with the `obsidian-*` prefix so they stay consistent with the repo convention. Repository names and local paths come from `git-repo-sync`; vault-specific settings stay in each repo's `.vault.toml`.
 
 ```bash
-cp -r skills/obsidian-templates skills/obsidian-index skills/obsidian-lint skills/obsidian-sync ~/.hermes/skills/
+cp -r skills/obsidian-templates skills/obsidian-index skills/obsidian-lint ~/.hermes/skills/
 ```
 
-These skills share a common vault configuration model and can register repo metadata through chat-driven setup.
+These skills use the shared Git repository registry and keep only Obsidian-specific conventions in `.vault.toml`.
 
 ## Configuration files
 
-The Obsidian skills share configuration under the Hermes vault directory:
+Git repo locations are managed by `git-repo-sync`; Obsidian-specific settings and caches are stored here:
 
 ```text
-~/.hermes/vault/repos.toml
+~/.hermes/git-repos.toml
 ~/.hermes/vault/conventions.md
 ~/.hermes/vault/index.json
 <repo>/.vault.toml

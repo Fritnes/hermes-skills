@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 import tomllib
@@ -11,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-DEFAULT_CONFIG = Path.home() / ".hermes" / "git-repos.toml"
+DEFAULT_CONFIG = Path(os.environ.get("HERMES_GIT_REPOS_FILE", "~/.hermes/git-repos.toml")).expanduser()
 
 
 @dataclass(frozen=True)
@@ -58,9 +59,12 @@ def load_repositories(config_path: Path) -> list[Repository]:
             raise ValueError(f"Repository entry {key!r} must be a TOML table.")
 
         required = ("name", "description", "remote", "local_path")
-        values = {field: entry.get(field) for field in required}
-        if any(not isinstance(value, str) or not value.strip() for value in values.values()):
-            raise ValueError(f"Repository {key!r} needs name, description, remote, and local_path strings.")
+        values: dict[str, str] = {}
+        for field in required:
+            value = entry.get(field)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"Repository {key!r} needs name, description, remote, and local_path strings.")
+            values[field] = value
         if values["name"] != key:
             raise ValueError(f"Repository table key and name must match for {key!r}.")
 

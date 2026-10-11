@@ -1,6 +1,6 @@
 ---
 name: obsidian-index
-description: Build and query a searchable index of all notes across my vault repos (titles, tags, links, backlinks). Use when I ask to find notes, list by tag, show backlinks, or summarize a topic across vaults. Also handles first-time registration of my vault repos through chat.
+description: Build and query a searchable index of notes in repos registered with git-repo-sync (titles, tags, links, backlinks). Use when I ask to find notes, list by tag, show backlinks, or summarize a topic across vaults.
 version: 2.0.0
 ---
 
@@ -8,20 +8,11 @@ version: 2.0.0
 
 A cached JSON index of every note in every repo, so you search metadata instead of reading files.
 
-## First-time setup (done in chat, before the task)
-Config is created by talking to me. Never ask me to edit files by hand, and never edit `repos.toml` / `.vault.toml` yourself; use `vault_config.py`.
+## Repo selection and first use
 
-1. Run: `python ~/.hermes/skills/obsidian-index/scripts/vault_config.py status`
-   (if the path is wrong: `find ~/.hermes/skills -name vault_config.py`)
-2. **No repos registered, or the repo I mention is missing?** Ask me for each vault repo: a short name and its local folder path
-   (or its git URL plus where to clone it). One question at a time. Then:
-   - `vault_config.py detect --path <path>` and show me a short summary of what you found
-   - `vault_config.py add-repo --name <n> --path <path> [--url <git-url>]`
-3. **This skill's settings not yet configured?** (see "Settings to ask about" below; `status` lists missing sections)
-   Propose defaults based on `detect`, ask me to confirm or change them, then save with `vault_config.py init-repo`.
-   Ask only about what `detect` could not tell you. If I say "just use defaults", proceed without saving.
-4. Tell me in one line what was saved, then do the actual task.
-Setup runs once per repo. Skip steps already done.
+Repository names and local paths come from `~/.hermes/git-repos.toml`, managed by `git-repo-sync`. Default index operations include repos marked `obsidian = true` or containing `.obsidian/` or `.vault.toml`. If the requested repo is not registered or cloned, use `git-repo-sync` to set it up; do not create another repo registry.
+
+Use `--repo <name>` to target one registered repo. Obsidian-specific ignore settings live in that repo's `.vault.toml`; inspect the vault first and ask before saving changes with `vault_config.py init-repo`.
 
 ## Settings to ask about (section `repo` in `<repo>/.vault.toml`)
 - Folders to exclude from the index (default: `.obsidian, .git, .trash, attachments, node_modules`).

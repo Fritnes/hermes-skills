@@ -5,8 +5,6 @@ so nobody has to edit TOML by hand.
 Commands
   status                                   what is configured / missing (run this first)
   detect --path P                          inspect a folder: git, Obsidian settings, folders, frontmatter keys
-  add-repo --name N --path P [--branch B] [--remote R] [--url U]   register a repo (clones from --url if P missing)
-  remove-repo --name N                     unregister (never deletes files)
   init-repo --name N [options]             create/update <repo>/.vault.toml (only the options you pass)
         --type T  --templates-dir D  --ignore a,b  --commit-prefix P  --auto-push true|false
         --required-keys a,b  --orphan-ignore a,b
@@ -15,7 +13,7 @@ Commands
   conventions show|set|append              read / write ~/.hermes/vault/conventions.md (text via stdin)
 
 Files
-  ~/.hermes/vault/repos.toml      global registry
+    ~/.hermes/git-repos.toml        repository registry (managed by git-repo-sync)
   <repo>/.vault.toml              per-repo settings
   ~/.hermes/vault/conventions.md  writing conventions (tags, frontmatter, linking)
 """
@@ -71,20 +69,6 @@ def dumps(data: dict) -> str:
 
 
 # ----------------------------------------------------------------- helpers
-def read_raw_registry() -> dict:
-    if V.REGISTRY.exists():
-        return tomllib.loads(V.REGISTRY.read_text(encoding="utf-8"))
-    return {"repos": []}
-
-
-def write_registry(data: dict) -> None:
-    V.CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    V.REGISTRY.write_text(
-        "# Managed by vault_config.py (Hermes edits this through chat). Safe to edit by hand too.\n\n" + dumps(data),
-        encoding="utf-8",
-    )
-
-
 def git(path: Path, *args: str, timeout: int = 20) -> subprocess.CompletedProcess:
     return subprocess.run(["git", "-C", str(path), *args], capture_output=True, text=True, timeout=timeout)
 
@@ -97,29 +81,22 @@ def read_json(p: Path) -> dict:
 
 
 def find_repo(name: str) -> dict:
-    for r in read_raw_registry().get("repos", []):
-        if r["name"] == name:
-            return r
-    sys.exit(f"Unknown repo '{name}'. Registered: {[r['name'] for r in read_raw_registry().get('repos', [])]}")
+    repos = V.select_repos(name)
+    return repos[0]
 
 
 # ----------------------------------------------------------------- commands
 def cmd_status(_a):
     print(f"Config dir : {V.CONFIG_DIR}")
-    repos = read_raw_registry().get("repos", [])
-    if not V.REGISTRY.exists() or not repos:
-        print("Registry   : NOT CONFIGURED (no repos registered)")
-        print("=> Run first-time setup: ask the user for each vault repo's name and path/URL.")
-    else:
-        print(f"Registry   : {V.REGISTRY}  ({len(repos)} repo(s))")
+    repos = V.load_registry()
+    print(f"Git repos  : {V.REGISTRY}  ({len(repos)} Obsidian repo(s))")
     for r in repos:
-        p = Path(r["path"]).expanduser()
+        p = r["path"]
         exists = p.is_dir()
         is_git = exists and git(p, "rev-parse", "--is-inside-work-tree").returncode == 0
         cfgf = p / V.REPO_CONFIG_NAME
         sections = sorted(tomllib.loads(cfgf.read_text(encoding="utf-8")).keys()) if cfgf.exists() else []
-        print(f"- {r['name']}: path={r['path']} exists={'yes' if exists else 'NO'} git={'yes' if is_git else 'no'}"
-              f"{' enabled=false' if r.get('enabled') is False else ''}")
+        print(f"- {r['name']}: path={p} exists={'yes' if exists else 'NO'} git={'yes' if is_git else 'no'}")
         print(f"    .vault.toml sections set: {', '.join(sections) if sections else '(none; defaults in use)'}")
         missing = [s for s in ("folders", "naming", "lint", "sync", "repo") if s not in sections]
         if missing:
@@ -136,9 +113,9 @@ def cmd_detect(a):
     print(f"Path: {p}")
     if git(p, "rev-parse", "--is-inside-work-tree").returncode == 0:
         branch = git(p, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
-        remote = git(p, "remote", "get-url", "origin").stdout.strip() or "(no origin remote)"
+        remote = "yes" if git(p, "remote").stdout.strip() else "no"
         dirty = len([l for l in git(p, "status", "--porcelain").stdout.splitlines() if l.strip()])
-        print(f"Git: yes, branch={branch}, origin={remote}, uncommitted files={dirty}")
+        print(f"Git: yes, branch={branch}, configured remotes={remote}, uncommitted files={dirty}")
     else:
         print("Git: NOT a git repository")
 
@@ -172,40 +149,6 @@ def cmd_detect(a):
     if tags:
         print("Common tags: " + ", ".join(f"#{k}({c})" for k, c in tags.most_common(10)))
     print("\nUse this to PROPOSE settings to the user; do not ask what is already visible above.")
-
-
-def cmd_add_repo(a):
-    p = Path(a.path).expanduser()
-    if not p.exists():
-        if not a.url:
-            sys.exit(f"{p} does not exist. Give --url to clone it there, or fix the path.")
-        p.parent.mkdir(parents=True, exist_ok=True)
-        c = subprocess.run(["git", "clone", a.url, str(p)], capture_output=True, text=True, timeout=600)
-        if c.returncode != 0:
-            sys.exit(f"git clone failed:\n{c.stderr.strip()[:500]}")
-        print(f"Cloned {a.url} -> {p}")
-    is_git = git(p, "rev-parse", "--is-inside-work-tree").returncode == 0
-    branch = a.branch or (git(p, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip() if is_git else "main") or "main"
-
-    data = read_raw_registry()
-    repos = data.setdefault("repos", [])
-    if any(r["name"] == a.name for r in repos):
-        sys.exit(f"A repo named '{a.name}' already exists. Pick another name or remove it first.")
-    repos.append({"name": a.name, "path": a.path, "branch": branch, "remote": a.remote})
-    write_registry(data)
-    print(f"Registered '{a.name}' -> {a.path} (branch {branch}, remote {a.remote})")
-    if not is_git:
-        print("WARNING: not a git repository; obsidian-sync will report an error for it.")
-
-
-def cmd_remove_repo(a):
-    data = read_raw_registry()
-    before = len(data.get("repos", []))
-    data["repos"] = [r for r in data.get("repos", []) if r["name"] != a.name]
-    if len(data["repos"]) == before:
-        sys.exit(f"No repo named '{a.name}'.")
-    write_registry(data)
-    print(f"Unregistered '{a.name}'. Files on disk were NOT touched.")
 
 
 def _csv(s: str) -> list[str]:
@@ -246,7 +189,7 @@ def cmd_init_repo(a):
     f.write_text("# Managed by vault_config.py. Commit this file with the repo.\n\n" + dumps(data), encoding="utf-8")
     print(f"Wrote {f}\n")
     print(f.read_text(encoding="utf-8"))
-    print("Note: .vault.toml is a new/changed file in the repo; commit it with obsidian-sync when ready.")
+    print("Note: .vault.toml is a new/changed file in the repo; use git-repo-sync to review and commit it when requested.")
 
 
 def cmd_show(a):
@@ -276,11 +219,6 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("status").set_defaults(fn=cmd_status)
     s = sub.add_parser("detect"); s.add_argument("--path", required=True); s.set_defaults(fn=cmd_detect)
-    s = sub.add_parser("add-repo")
-    s.add_argument("--name", required=True); s.add_argument("--path", required=True)
-    s.add_argument("--branch"); s.add_argument("--remote", default="origin"); s.add_argument("--url")
-    s.set_defaults(fn=cmd_add_repo)
-    s = sub.add_parser("remove-repo"); s.add_argument("--name", required=True); s.set_defaults(fn=cmd_remove_repo)
     s = sub.add_parser("init-repo")
     s.add_argument("--name", required=True)
     for opt in ("--type", "--templates-dir", "--ignore", "--commit-prefix", "--auto-push", "--required-keys", "--orphan-ignore"):

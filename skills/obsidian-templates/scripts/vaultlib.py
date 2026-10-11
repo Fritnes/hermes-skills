@@ -2,11 +2,11 @@
 """Shared helpers for the Obsidian vault skills (stdlib only, Python 3.11+).
 
 Config locations
-  Global registry : ~/.hermes/vault/repos.toml      (which repos exist, where)
+    Git repo registry: ~/.hermes/git-repos.toml       (which repos exist, where)
   Per-repo config : <repo>/.vault.toml              (conventions for that repo)
   Index cache     : ~/.hermes/vault/index.json      (generated, safe to delete)
 
-Override the global dir with the HERMES_VAULT_DIR environment variable.
+Override repo registry with HERMES_GIT_REPOS_FILE and vault cache/settings with HERMES_VAULT_DIR.
 """
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ import copy
 import json
 import os
 import re
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,7 +25,7 @@ except ModuleNotFoundError:  # Python < 3.11
     sys.exit("Python 3.11+ is required (needs the stdlib 'tomllib' module).")
 
 CONFIG_DIR = Path(os.environ.get("HERMES_VAULT_DIR", "~/.hermes/vault")).expanduser()
-REGISTRY = CONFIG_DIR / "repos.toml"
+REGISTRY = Path(os.environ.get("HERMES_GIT_REPOS_FILE", "~/.hermes/git-repos.toml")).expanduser()
 INDEX_FILE = CONFIG_DIR / "index.json"
 CONVENTIONS_FILE = CONFIG_DIR / "conventions.md"
 REPO_CONFIG_NAME = ".vault.toml"
@@ -68,33 +69,90 @@ def _merge(base: dict, over: dict) -> dict:
     return out
 
 
-def load_registry() -> list[dict]:
+def _git_output(path: Path, *args: str) -> str:
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(path), *args], capture_output=True, text=True, check=False
+        )
+    except OSError:
+        return ""
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def _all_repos() -> list[dict]:
     if not REGISTRY.exists():
         sys.exit(
             f"NOT CONFIGURED: no registry at {REGISTRY}.\n"
-            f"Run first-time setup: ask the user for their vault repos, then use\n"
-            f"  vault_config.py detect --path <p>   and   vault_config.py add-repo --name <n> --path <p>"
+            "Register local repositories with the git-repo-sync skill first."
         )
-    data = tomllib.loads(REGISTRY.read_text(encoding="utf-8"))
+    try:
+        data = tomllib.loads(REGISTRY.read_text(encoding="utf-8"))
+    except (OSError, tomllib.TOMLDecodeError) as error:
+        sys.exit(f"Cannot read Git repository registry {REGISTRY}: {error}")
+
+    entries = data.get("repositories")
+    if not isinstance(entries, dict):
+        sys.exit(f"Invalid Git repository registry {REGISTRY}: expected [repositories.<name>] tables.")
+
     repos = []
-    for r in data.get("repos", []):
-        if not r.get("enabled", True):
-            continue
+    for key, entry in entries.items():
+        if not isinstance(entry, dict):
+            sys.exit(f"Invalid repository entry {key!r} in {REGISTRY}.")
+        name = entry.get("name")
+        description = entry.get("description")
+        remote_url = entry.get("remote")
+        local_path = entry.get("local_path")
+        if key != name or not all(isinstance(value, str) and value.strip() for value in (name, description, remote_url, local_path)):
+            sys.exit(f"Repository {key!r} needs matching name and table key, description, remote, and local_path.")
+        if not Path(local_path).expanduser().is_absolute():
+            sys.exit(f"Repository {name!r} must use an absolute local_path.")
+
+        path = Path(local_path).expanduser()
+        branch = entry.get("branch")
+        if branch is not None and (not isinstance(branch, str) or not branch.strip()):
+            sys.exit(f"Repository {name!r} has an invalid branch.")
+        if not branch:
+            current = _git_output(path, "rev-parse", "--abbrev-ref", "HEAD")
+            branch = current if current and current != "HEAD" else "main"
+
+        remote_name = None
+        for candidate in _git_output(path, "remote").splitlines():
+            urls = _git_output(path, "remote", "get-url", "--all", candidate).splitlines()
+            if remote_url in urls:
+                remote_name = candidate
+                break
+
+        obsidian_flag = entry.get("obsidian", False)
+        if not isinstance(obsidian_flag, bool):
+            sys.exit(f"Repository {name!r} has an invalid obsidian flag; use true or false.")
+        is_obsidian = obsidian_flag or (path / ".obsidian").is_dir() or (path / REPO_CONFIG_NAME).is_file()
         repos.append(
             {
-                "name": r["name"],
-                "path": Path(r["path"]).expanduser(),
-                "branch": r.get("branch", "main"),
-                "remote": r.get("remote", "origin"),
+                "name": name,
+                "description": description,
+                "path": path,
+                "branch": branch,
+                "remote": remote_name or "origin",
+                "remote_url": remote_url,
+                "remote_matches": remote_name is not None,
+                "obsidian": is_obsidian,
             }
         )
+    return repos
+
+
+def load_registry() -> list[dict]:
+    repos = [repo for repo in _all_repos() if repo["obsidian"]]
     if not repos:
-        sys.exit(f"NOT CONFIGURED: no enabled repos in {REGISTRY}. Use vault_config.py add-repo.")
+        sys.exit(
+            f"No Obsidian vaults found in {REGISTRY}. Add `obsidian = true` to a repository entry, "
+            "or ensure its local repo contains `.obsidian/` or `.vault.toml`."
+        )
     return repos
 
 
 def select_repos(name: str | None) -> list[dict]:
-    repos = load_registry()
+    repos = _all_repos() if name else load_registry()
     if not name:
         return repos
     found = [r for r in repos if r["name"] == name]
@@ -264,15 +322,27 @@ def save_index(index: dict) -> Path:
 
 
 def load_index(max_age_hours: float = 24, rebuild: bool = False) -> dict:
-    """Load cached index, rebuilding it if missing, stale, or rebuild=True."""
+    """Load cached index, rebuilding it if missing, stale, or for different repos."""
     import time
 
-    stale = (
-        not INDEX_FILE.exists()
-        or (time.time() - INDEX_FILE.stat().st_mtime) > max_age_hours * 3600
-    )
+    repos = load_registry()
+    stale = not INDEX_FILE.exists()
+    cached = {}
+    if not stale:
+        try:
+            cached = json.loads(INDEX_FILE.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            stale = True
+    if not stale:
+        cached_repos = cached.get("repos", {})
+        current_repos = {r["name"]: str(r["path"]) for r in repos}
+        cached_paths = {name: meta.get("path") for name, meta in cached_repos.items()} if isinstance(cached_repos, dict) else {}
+        stale = (
+            current_repos != cached_paths
+            or (time.time() - INDEX_FILE.stat().st_mtime) > max_age_hours * 3600
+        )
     if rebuild or stale:
-        idx = build_index(load_registry())
+        idx = build_index(repos)
         save_index(idx)
         return idx
-    return json.loads(INDEX_FILE.read_text(encoding="utf-8"))
+    return cached
