@@ -9,6 +9,7 @@ skills/
 ├── hello-world/
 ├── text-summarizer/
 ├── skill-template/
+├── obsidian-add-repo-config/
 ├── obsidian-templates/
 ├── obsidian-index/
 ├── obsidian-lint/
@@ -25,6 +26,7 @@ Each folder in `skills/` contains its own `SKILL.md` and any supporting scripts 
 | `hello-world` | Verifies the skill system is active | "Test hello skill" |
 | `text-summarizer` | Summarizes paste text into a short structured answer | "Summarize this article" |
 | `skill-template` | Starter template for creating a new skill | "Create a new skill" |
+| `obsidian-add-repo-config` | Add, update, disable, and remove vault repo configuration | "Connect my vault repo" |
 | `obsidian-templates` | Create notes from templates into the right repo/folder | "Create a meeting note" |
 | `obsidian-index` | Build and query a searchable vault index | "Find notes about project alpha" |
 | `obsidian-lint` | Check for broken links, orphans, duplicates, and missing frontmatter | "Audit my vault" |
