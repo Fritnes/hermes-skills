@@ -14,6 +14,7 @@ skills/
 ├── obsidian-index/
 ├── obsidian-lint/
 ├── obsidian-sync/
+├── vikunja/
 └── ...
 ```
 
@@ -31,6 +32,7 @@ Each folder in `skills/` contains its own `SKILL.md` and any supporting scripts 
 | `obsidian-index` | Build and query a searchable vault index | "Find notes about project alpha" |
 | `obsidian-lint` | Check for broken links, orphans, duplicates, and missing frontmatter | "Audit my vault" |
 | `obsidian-sync` | Safely check status, pull, commit, and push vault repos | "Sync my vault" |
+| `vikunja` | Manage tasks in a self-hosted Vikunja instance | "List my open tasks" |
 
 ## Install
 
@@ -40,6 +42,7 @@ Copy the folders you want into your Hermes skill directory.
 cp -r skills/hello-world ~/.hermes/skills/
 cp -r skills/text-summarizer ~/.hermes/skills/
 cp -r skills/obsidian-* ~/.hermes/skills/
+cp -r skills/vikunja ~/.hermes/skills/
 ```
 
 If you want just a subset, replace the wildcard with specific folders.
