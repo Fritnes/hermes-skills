@@ -83,16 +83,24 @@ def fail(r):
 
 def list_projects():
     projects = [p for p in get_all("/projects") if p.get("id", 0) > 0]
+    if not projects:
+        print("No projects found.")
+        return
+    id_width = max(len(str(p["id"])) for p in projects)
+    print(f"Projects ({len(projects)}):")
     for p in projects:
-        print(f"#{p['id']}  {p['title']}")
+        print(f"  #{str(p['id']).rjust(id_width)}  {p['title']}")
 
 
 def list_labels():
     labels = get_all("/labels")
     if not labels:
         print("No labels defined.")
+        return
+    id_width = max(len(str(label["id"])) for label in labels)
+    print(f"Labels ({len(labels)}):")
     for l in labels:
-        print(f"#{l['id']}  {l['title']}")
+        print(f"  #{str(l['id']).rjust(id_width)}  {l['title']}")
 
 
 def list_tasks(project_id=None):
@@ -101,7 +109,7 @@ def list_tasks(project_id=None):
     if project_id:
         projects = [p for p in projects if str(p.get("id")) == str(project_id)]
 
-    output, total_open = [], 0
+    groups = []
     for p in projects:
         pid = p.get("id", 0)
         if pid < 0:  # saved filters / favorites are virtual projects
@@ -109,16 +117,18 @@ def list_tasks(project_id=None):
         tasks = get_all(f"/projects/{pid}/tasks", {"filter": "done = false"})
         tasks = [t for t in tasks if not t.get("done")]
         if tasks:
-            output.append(f"**{p['title']} tasks:**")
-            output += [f"   • `#{t['id']}` {t['title']}" for t in tasks]
-            output.append("")
-            total_open += len(tasks)
+            groups.append((p["title"], tasks))
 
-    if not output:
-        print("✅ No open tasks found!")
-    else:
-        print(f"📋 **Total Open Tasks: {total_open}**\n")
-        print("\n".join(output))
+    if not groups:
+        print("No open tasks found.")
+        return
+
+    for group_index, (title, tasks) in enumerate(groups):
+        if group_index:
+            print()
+        print(title)
+        for task in tasks:
+            print(f" [{task['id']}] {task['title']}")
 
 
 def show_task(task_id):
@@ -127,10 +137,15 @@ def show_task(task_id):
         fail(r)
     t = r.json()
     labels = ", ".join(l["title"] for l in (t.get("labels") or [])) or "-"
-    print(f"#{t['id']} {t['title']}")
-    print(f"  project: {t.get('project_id')}  done: {t.get('done')}  labels: {labels}")
+    status = "done" if t.get("done") else "open"
+    print(f"Task #{t['id']}: {t['title']}")
+    print(f"Status: {status}")
+    print(f"Project ID: {t.get('project_id', '-')}")
+    print(f"Labels: {labels}")
     if t.get("description"):
-        print(f"  description: {t['description']}")
+        print("Description:")
+        for line in str(t["description"]).splitlines():
+            print(f"  {line}")
 
 
 def mark_done(task_id):
@@ -176,7 +191,7 @@ def add_label(task_id, label_id):
         fail(r)
 
 
-USAGE = __doc__.split("Usage:")[1].strip()
+USAGE = (__doc__ or "").split("Usage:")[1].strip()
 
 
 def need(n, usage):

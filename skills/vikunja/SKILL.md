@@ -35,6 +35,8 @@ Run from this skill's directory: `python3 scripts/vikunja_cli.py <command>`
 
 ## Workflow guidance
 
+CLI output is plain text: `list` prints each project name on its own line, followed by tasks as `[id] title`, with a blank line between projects. `show` prints status, project ID, labels, and the description. Relay this concise output rather than dumping raw API JSON.
+
 - **Resolve names to IDs first.** Users say "the HomeLabs project" or "the urgent label", but the API needs numeric IDs. Run `projects` or `labels` and match, rather than guessing. If several match, ask which one.
 - **Verify task identity before mutation.** If the user refers to a task by description, run `list` or `show` to identify it. Ask which task they mean if more than one matches; after a successful change, state the task ID and title.
 - **Create then label.** `create` prints the new task ID; use it for a follow-up `label` or `comment` call when the user wants both.
