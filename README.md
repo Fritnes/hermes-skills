@@ -70,7 +70,7 @@ Use this repo as a mounted Hermes skill source inside a Docker-based setup.
 ### Initial setup
 
 ```bash
-git clone <your-repo-url> hermes-skills
+git clone https://github.com/Fritnes/hermes-skills.git
 cd hermes-skills
 ```
 
