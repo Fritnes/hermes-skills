@@ -46,6 +46,18 @@ cp -r skills/vikunja ~/.hermes/skills/
 
 If you want just a subset, replace the wildcard with specific folders.
 
+## Using a skill
+
+Ask Hermes normally and it may select a relevant skill automatically. To explicitly request one, start your message with `/skill-name`, followed by the task. For example:
+
+```text
+/git-repo-sync check my home-lab repository
+/obsidian-templates create a meeting note about the deployment
+/vikunja list my open tasks
+```
+
+A skill is a package of task-specific instructions and supporting tools for Hermes. It guides how Hermes handles that task; it is not a separate AI, model, or mode of thinking.
+
 ## Obsidian vault skills
 
 The Obsidian-related skills are intentionally named with the `obsidian-*` prefix so they stay consistent with the repo convention. Repository names and local paths come from `git-repo-sync`; vault-specific settings stay in each repo's `.vault.toml`.
