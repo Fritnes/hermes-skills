@@ -91,10 +91,11 @@ Example config idea:
 
 ```yaml
 skills:
-  - /skills
+  external_dirs:
+    - /skills
 ```
 
-Or in the Hermes app config where you define local skill paths, add the mounted folder that contains the `skills/` directory.
+This keeps the mounted directory as an external skill source without copying the repo into `~/.hermes/skills/`.
 
 ### Update later
 
