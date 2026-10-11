@@ -63,6 +63,48 @@ The Obsidian skills share configuration under the Hermes vault directory:
 <repo>/.vault.toml
 ```
 
+## Docker Compose setup
+
+Use this repo as a mounted Hermes skill source inside a Docker-based setup.
+
+### Initial setup
+
+```bash
+git clone <your-repo-url> hermes-skills
+cd hermes-skills
+```
+
+Add the repository to your Docker Compose configuration, for example:
+
+```yaml
+services:
+  hermes:
+    image: your-hermes-image
+    volumes:
+      - ./hermes-skills/skills:/skills:ro
+      - ./hermes-data:/data
+```
+
+Then add the remote skill source to your Hermes config so Hermes can load the skills from the mounted folder.
+
+Example config idea:
+
+```yaml
+skills:
+  - /skills
+```
+
+Or in the Hermes app config where you define local skill paths, add the mounted folder that contains the `skills/` directory.
+
+### Update later
+
+```bash
+cd hermes-skills
+git pull
+```
+
+Then restart the Hermes container or reload the app so it picks up the latest skills.
+
 ## Adding a new skill
 
 1. Create a new folder under `skills/`.
