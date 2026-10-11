@@ -1,6 +1,6 @@
 # Hermes Skills
 
-This repository contains a set of Hermes Agent skills for simple utility work and Obsidian vault automation.
+This repository contains Hermes Agent skills for utility work, Git repository management, and Obsidian vault automation.
 
 ## Repository structure
 
@@ -9,6 +9,7 @@ skills/
 ├── hello-world/
 ├── text-summarizer/
 ├── skill-template/
+├── git-repo-sync/
 ├── obsidian-add-repo-config/
 ├── obsidian-templates/
 ├── obsidian-index/
@@ -27,6 +28,7 @@ Each folder in `skills/` contains its own `SKILL.md` and any supporting scripts 
 | `hello-world` | Verifies the skill system is active | "Test hello skill" |
 | `text-summarizer` | Summarizes paste text into a short structured answer | "Summarize this article" |
 | `skill-template` | Starter template for creating a new skill | "Create a new skill" |
+| `git-repo-sync` | Register multiple repos and check whether local branches need updating | "Check my home-lab repo" |
 | `obsidian-add-repo-config` | Add, update, disable, and remove vault repo configuration | "Connect my vault repo" |
 | `obsidian-templates` | Create notes from templates into the right repo/folder | "Create a meeting note" |
 | `obsidian-index` | Build and query a searchable vault index | "Find notes about project alpha" |
@@ -41,6 +43,7 @@ Copy the folders you want into your Hermes skill directory.
 ```bash
 cp -r skills/hello-world ~/.hermes/skills/
 cp -r skills/text-summarizer ~/.hermes/skills/
+cp -r skills/git-repo-sync ~/.hermes/skills/
 cp -r skills/obsidian-* ~/.hermes/skills/
 cp -r skills/vikunja ~/.hermes/skills/
 ```
