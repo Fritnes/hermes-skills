@@ -13,6 +13,7 @@ skills/
 ├── obsidian-templates/
 ├── obsidian-index/
 ├── obsidian-lint/
+├── reactive-resume-selfhosted/
 ├── vikunja/
 └── ...
 ```
@@ -30,6 +31,7 @@ Each folder in `skills/` contains its own `SKILL.md` and any supporting scripts 
 | `obsidian-templates` | Create notes or standardize existing notes to one structure | "Create a meeting note" / "Format my notes" |
 | `obsidian-index` | Build and query a searchable vault index | "Find notes about project alpha" |
 | `obsidian-lint` | Check for broken links, orphans, duplicates, and missing frontmatter | "Audit my vault" |
+| `reactive-resume-selfhosted` | Read, edit, and export resumes from a self-hosted Reactive Resume instance | "Review my resume on the homelab server" |
 | `vikunja` | Manage tasks in a self-hosted Vikunja instance | "List my open tasks" |
 
 ## Install
@@ -41,6 +43,7 @@ cp -r skills/hello-world ~/.hermes/skills/
 cp -r skills/text-summarizer ~/.hermes/skills/
 cp -r skills/git-repo-sync ~/.hermes/skills/
 cp -r skills/obsidian-* ~/.hermes/skills/
+cp -r skills/reactive-resume-selfhosted ~/.hermes/skills/
 cp -r skills/vikunja ~/.hermes/skills/
 ```
 
@@ -54,6 +57,7 @@ Ask Hermes normally and it may select a relevant skill automatically. To explici
 /git-repo-sync check my home-lab repository
 /obsidian-templates create a meeting note about the deployment
 /obsidian-templates format all notes in my homelab folder
+/reactive-resume-selfhosted review my resume on the homelab server
 /vikunja list my open tasks
 ```
 
