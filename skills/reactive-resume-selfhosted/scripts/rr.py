@@ -9,6 +9,7 @@ Commands:
   config set [--url URL] [--key KEY] [--insecure]   save connection details
   config show                                       show them (key masked)
   config clear                                      delete stored details
+    health [--url URL] [--insecure]                    check app health/version (no API key)
   check                                             verify URL + key work
   list [--tag TAG] [--search TEXT]                  list resumes (no content)
   get ID [--out FILE]                               full resume incl. data
@@ -30,6 +31,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from typing import Any, NoReturn
 
 CONFIG_DIR = Path(os.environ.get("RR_CONFIG_DIR", Path.home() / ".config" / "reactive-resume"))
 CONFIG_FILE = CONFIG_DIR / "config.json"
@@ -38,7 +40,7 @@ API_PREFIX = "/api/openapi"
 TIMEOUT = 60
 
 
-def die(msg, code=1):
+def die(msg, code=1) -> NoReturn:
     print(f"error: {msg}", file=sys.stderr)
     sys.exit(code)
 
@@ -58,7 +60,7 @@ def normalize_url(raw):
     return u
 
 
-def read_file_config():
+def read_file_config() -> dict[str, Any]:
     try:
         return json.loads(CONFIG_FILE.read_text())
     except FileNotFoundError:
@@ -96,7 +98,7 @@ def mask(key):
     return key[:4] + "…" + key[-4:] if key and len(key) > 10 else "****"
 
 
-def request(method, path, body=None, expect_binary=False):
+def request(method, path, body=None, expect_binary=False) -> tuple[int, Any | bytes]:
     base, key, insecure = get_config()
     url = base + API_PREFIX + path
     data = None
@@ -127,6 +129,26 @@ def request(method, path, body=None, expect_binary=False):
     except json.JSONDecodeError:
         parsed = raw.decode("utf-8", "replace")
     return status, parsed
+
+
+def request_health(base, insecure=False) -> tuple[int, Any]:
+    url = base + "/api/health"
+    req = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "rr-skill/1.0"})
+    ctx = ssl._create_unverified_context() if insecure and url.startswith("https") else None
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT, context=ctx) as response:
+            raw, status = response.read(), response.status
+    except urllib.error.HTTPError as error:
+        raw, status = error.read(), error.code
+    except urllib.error.URLError as error:
+        die(f"cannot reach {base}: {error.reason}")
+    except TimeoutError:
+        die(f"timed out checking health at {base}")
+    try:
+        payload = json.loads(raw) if raw else None
+    except json.JSONDecodeError:
+        payload = raw.decode("utf-8", "replace")
+    return status, payload
 
 
 def ok_or_die(status, payload, what):
@@ -195,6 +217,19 @@ def cmd_check(a):
     ok_or_die(status, payload, "check")
     n = len(payload) if isinstance(payload, list) else "?"
     print(f"OK - connected, key accepted, {n} resume(s) visible")
+
+
+def cmd_health(a):
+    cfg = read_file_config()
+    raw_url = a.url or os.environ.get("RR_BASE_URL") or cfg.get("url")
+    if not raw_url:
+        die("provide --url or save a server URL with `config set`")
+    base = normalize_url(raw_url)
+    insecure = a.insecure or bool(cfg.get("insecure")) or os.environ.get("RR_INSECURE") == "1"
+    status, payload = request_health(base, insecure)
+    out_json(payload) if not isinstance(payload, str) else print(payload)
+    if status >= 400 or not isinstance(payload, dict) or payload.get("status") != "healthy":
+        die(f"health check failed: HTTP {status}")
 
 
 def cmd_list(a):
@@ -322,6 +357,11 @@ def main():
     c.add_argument("--url"); c.add_argument("--key")
     c.add_argument("--insecure", action="store_true", help="skip TLS verification (self-signed certs)")
     c.set_defaults(fn=cmd_config)
+
+    c = sp.add_parser("health", help="check app health and version without an API key")
+    c.add_argument("--url", help="instance base URL; falls back to RR_BASE_URL or saved config")
+    c.add_argument("--insecure", action="store_true", help="skip TLS verification (self-signed certs)")
+    c.set_defaults(fn=cmd_health)
 
     sp.add_parser("check").set_defaults(fn=cmd_check)
 

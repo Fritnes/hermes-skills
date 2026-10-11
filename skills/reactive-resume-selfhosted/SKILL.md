@@ -11,6 +11,14 @@ Run it as `python3 <skill-dir>/scripts/rr.py ...` (`<skill-dir>` = the folder co
 
 ## 1. Connection setup (do this first)
 
+Before entering an API key, optionally check that the instance and its dependencies are healthy:
+
+```bash
+python3 scripts/rr.py health --url https://cv.example.com
+```
+
+This public health endpoint requires no API key and reports the running app version plus database/storage health. If unhealthy or unreachable, stop and resolve the server/network issue first. `health` does not verify API credentials.
+
 Check whether a connection is already stored:
 
 ```bash
@@ -29,6 +37,7 @@ The CLI prompts for the API key with hidden input. Do not pass the key as a comm
 - Self-signed HTTPS certificate? Add `--insecure` (only after telling the user what it means).
 - Details are saved to `~/.config/reactive-resume/config.json` with mode 600. `RR_BASE_URL` / `RR_API_KEY` environment variables override the file. To keep separate credentials for multiple instances, set `RR_CONFIG_DIR` to a different directory for each instance before running the CLI.
 - Verify with `python3 scripts/rr.py check`. It should report the key was accepted.
+- `health` accepts `--url` before setup; after setup it can use the saved URL. `check` requires the API key and verifies access to resumes.
 
 **Handling the key:**
 - Never repeat the full key back in chat, and never write it into any other file, command log, or document. `config show` masks it.
@@ -89,6 +98,7 @@ Moving to Trash, permanent deletion, changing public visibility/password, and un
 | Save/replace connection | `config set --url <url>` (then enter key at hidden prompt) |
 | Show connection (masked) | `config show` |
 | Test connection | `check` |
+| Check server health/version (no key required) | `health [--url URL] [--insecure]` |
 | List resumes | `list [--tag T] [--search text]` |
 | Read one | `get <id> [--out file]` |
 | Edit content | `patch <id> --ops file.json [--dry-run]` |

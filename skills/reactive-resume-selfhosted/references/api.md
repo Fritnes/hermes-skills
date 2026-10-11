@@ -16,6 +16,7 @@ Verified from the published docs:
 
 | Purpose | Method + path |
 |---|---|
+| Health and app version (no auth; path is at the instance root, not under `/api/openapi`) | `GET /api/health` |
 | List resumes (no content) | `GET /resumes` (filters: tags; sort) |
 | Get resume with `data` | `GET /resumes/{id}` |
 | Patch `data` (JSON Patch) | `PATCH /resumes/{id}` body `{"operations":[…], "expectedUpdatedAt":"…"}` |
@@ -26,6 +27,8 @@ Verified from the published docs:
 | Update stream (metadata only) | `GET /resumes/{id}/updates` |
 
 Also documented by name (confirm exact paths before use, see below): create resume, duplicate resume, import resume, move to Trash, restore from Trash, list/name/restore resume versions, ATS check, tags list, upload file.
+
+The health response includes `service`, `version`, overall `status`, timestamp/uptime, and database/storage status and latency. A `503` means one or more dependencies are unhealthy. The endpoint is unauthenticated, so use it to diagnose server availability before configuring an API key; it does not confirm API access.
 
 ## Confirming paths I haven't verified
 
