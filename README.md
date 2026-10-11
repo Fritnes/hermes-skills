@@ -27,7 +27,7 @@ Each folder in `skills/` contains its own `SKILL.md` and any supporting scripts 
 | `text-summarizer` | Summarizes paste text into a short structured answer | "Summarize this article" |
 | `skill-template` | Starter template for creating a new skill | "Create a new skill" |
 | `git-repo-sync` | Register multiple repos and check whether local branches need updating | "Check my home-lab repo" |
-| `obsidian-templates` | Create notes from templates into the right repo/folder | "Create a meeting note" |
+| `obsidian-templates` | Create notes or standardize existing notes to one structure | "Create a meeting note" / "Format my notes" |
 | `obsidian-index` | Build and query a searchable vault index | "Find notes about project alpha" |
 | `obsidian-lint` | Check for broken links, orphans, duplicates, and missing frontmatter | "Audit my vault" |
 | `vikunja` | Manage tasks in a self-hosted Vikunja instance | "List my open tasks" |
@@ -53,6 +53,7 @@ Ask Hermes normally and it may select a relevant skill automatically. To explici
 ```text
 /git-repo-sync check my home-lab repository
 /obsidian-templates create a meeting note about the deployment
+/obsidian-templates format all notes in my homelab folder
 /vikunja list my open tasks
 ```
 
