@@ -32,6 +32,7 @@ Each folder in `skills/` contains its own `SKILL.md` and any supporting scripts 
 | `git-repo-sync` | Register multiple repos and check whether local branches need updating | "Check my home-lab repo" |
 | `daily-tutor` | Runs a daily quiz/tutor loop with topic preferences and answer evaluation | "Quiz me on Linux" / "Daily question" / "Teach me by asking" |
 | `streak-tracker` | Tracks any daily activity streak with optional weekly freeze days | "Track my reading streak" / "I finished today's workout" / "How's my quiz streak?" |
+| `troubleshoot-drill` | Runs simulated broken-system scenarios to practice diagnosis and verify fixes | "Drill me on DNS" / "Troubleshoot a broken homelab service" |
 | `obsidian-templates` | Create notes or standardize existing notes to one structure | "Create a meeting note" / "Format my notes" |
 | `obsidian-index` | Build and query a searchable vault index | "Find notes about project alpha" |
 | `obsidian-lint` | Check for broken links, orphans, duplicates, and missing frontmatter | "Audit my vault" |
@@ -47,6 +48,7 @@ cp -r skills/hello-world ~/.hermes/skills/
 cp -r skills/text-summarizer ~/.hermes/skills/
 cp -r skills/git-repo-sync ~/.hermes/skills/
 cp -r skills/daily-tutor skills/streak-tracker ~/.hermes/skills/
+cp -r skills/troubleshoot-drill ~/.hermes/skills/
 cp -r skills/obsidian-* ~/.hermes/skills/
 cp -r skills/reactive-resume-selfhosted ~/.hermes/skills/
 cp -r skills/vikunja ~/.hermes/skills/
@@ -64,6 +66,7 @@ Ask Hermes normally and it may select a relevant skill automatically. To explici
 /daily-tutor set my topics to networking and Git
 /streak-tracker track my daily reading with one freeze per week
 /streak-tracker I answered today's quiz; update my streak
+/troubleshoot-drill give me a DNS troubleshooting scenario
 /obsidian-templates create a meeting note about the deployment
 /obsidian-templates format all notes in my homelab folder
 /reactive-resume-selfhosted review my resume on the homelab server
