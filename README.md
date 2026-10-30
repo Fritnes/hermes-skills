@@ -15,9 +15,7 @@ skills/
 ├── obsidian-templates/
 ├── obsidian-index/
 ├── obsidian-lint/
-├── reactive-resume-selfhosted/
 ├── second-brain/
-├── vikunja/
 └── ...
 ```
 
@@ -37,9 +35,7 @@ Each folder in `skills/` contains its own `SKILL.md` and any supporting scripts 
 | `obsidian-templates` | Create notes or standardize existing notes to one structure | "Create a meeting note" / "Format my notes" |
 | `obsidian-index` | Build and query a searchable vault index | "Find notes about project alpha" |
 | `obsidian-lint` | Check for broken links, orphans, duplicates, and missing frontmatter | "Audit my vault" |
-| `reactive-resume-selfhosted` | Read, edit, and export resumes from a self-hosted Reactive Resume instance | "Review my resume on the homelab server" |
 | `second-brain` | Ingest and query a personal knowledge base, sync tasks, and run weekly reviews | "Save this article to my second brain" / "Process my inbox" |
-| `vikunja` | Manage tasks in a self-hosted Vikunja instance | "List my open tasks" |
 
 ## Install
 
@@ -52,9 +48,7 @@ cp -r skills/git-repo-sync ~/.hermes/skills/
 cp -r skills/daily-tutor skills/streak-tracker ~/.hermes/skills/
 cp -r skills/troubleshoot-drill ~/.hermes/skills/
 cp -r skills/obsidian-* ~/.hermes/skills/
-cp -r skills/reactive-resume-selfhosted ~/.hermes/skills/
 cp -r skills/second-brain ~/.hermes/skills/
-cp -r skills/vikunja ~/.hermes/skills/
 ```
 
 If you want just a subset, replace the wildcard with specific folders.
@@ -72,11 +66,9 @@ Ask Hermes normally and it may select a relevant skill automatically. To explici
 /troubleshoot-drill give me a DNS troubleshooting scenario
 /obsidian-templates create a meeting note about the deployment
 /obsidian-templates format all notes in my homelab folder
-/reactive-resume-selfhosted review my resume on the homelab server
 /second-brain save this article to my knowledge base
 /second-brain process my inbox
 /second-brain what did I decide about the deployment?
-/vikunja list my open tasks
 ```
 
 A skill is a package of task-specific instructions and supporting tools for Hermes. It guides how Hermes handles that task; it is not a separate AI, model, or mode of thinking.
